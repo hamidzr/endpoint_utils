@@ -6,7 +6,8 @@ let path            = require('path'),
     // session         = require('express-session'),
     logger          = require('morgan'),
     bodyParser      = require('body-parser'),
-    mongoose        = require('mongoose');
+    mongoose        = require('mongoose'),
+    redis			= require('redis');
 
 let port = process.env.PORT ? process.env.PORT : 9000;
 let env = process.env.NODE_ENV ? process.env.NODE_ENV : 'dev';
@@ -22,6 +23,11 @@ app.use(express.static(path.join(__dirname, '../../public')));
 // Setup pipeline support for server-side templates
 app.engine('pug', require('pug').__express);
 app.set('views', __dirname);
+// Setup redis
+app.redisC = redis.createClient();
+app.redisC.on('connect', function() {
+    console.log('connected to redis client');
+});
 // Setup pipeline session support
 // app.use(session({
 //     name: 'session',
@@ -52,7 +58,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // };
 
 // Import our API Routes
-require('./api/v1/key_value')(app);
+require('./api/kv/v1/key_value')(app);
 
 
 /**********************************************************************************************************/

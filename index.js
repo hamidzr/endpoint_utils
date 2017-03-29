@@ -28,6 +28,7 @@ app.redisC = redis.createClient();
 app.redisC.on('connect', function() {
     console.log('connected to redis client');
 });
+
 // Setup pipeline session support
 // app.use(session({
 //     name: 'session',
@@ -44,6 +45,14 @@ app.redisC.on('connect', function() {
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// allow CORS
+var allowCrossDomain = function(req, res, next) {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    next();
+}
+app.use(allowCrossDomain);
 // Connect to mongoBD
 // let options = { promiseLibrary: require('bluebird') };
 // mongoose.connect('mongodb://localhost:32768/heminggs', options, err => {
@@ -65,7 +74,8 @@ require('./api/kv/v1/key_value')(app);
 
 // Give them the base page
 app.get('*', (req, res) => {
-    res.render('base.pug', {});
+    // res.render('base.pug', {});
+    res.status(404).send('resource not found');
 });
 
 /**********************************************************************************************************/

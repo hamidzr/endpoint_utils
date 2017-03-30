@@ -19,7 +19,7 @@ module.exports = app => {
 
 	//delete a key
 	app.delete('/kv/v1/keys/:key',(req,res)=>{
-		app.redisC.set([req.params.key,'']);
+		app.redisC.del([req.params.key]);
 		res.status(200).send(req.params.key + ' deleted');
 	});
 	

@@ -7,9 +7,13 @@ let path            = require('path'),
     logger          = require('morgan'),
     bodyParser      = require('body-parser'),
     mongoose        = require('mongoose'),
+    http 			= require('http'),
+    https 			= require('https'),
+    fs 				= require('fs'),
     redis			= require('redis');
 
-let port = process.env.PORT ? process.env.PORT : 9000;
+let port = process.env.PORT ? process.env.PORT : 9080;
+let sslPort = process.env.SSLPORT ? process.env.SSLPORT : 9443;
 let env = process.env.NODE_ENV ? process.env.NODE_ENV : 'dev';
 
 /**********************************************************************************************************/
@@ -28,6 +32,16 @@ app.redisC = redis.createClient();
 app.redisC.on('connect', function() {
     console.log('connected to redis client');
 });
+
+
+//setup ssl creds
+if (process.env.CERT){
+	var sslOptions = {
+	  key: fs.readFileSync('/etc/letsencrypt/live/gr.itguy.ir/privkey.pem'),
+	  cert: fs.readFileSync('/etc/letsencrypt/live/gr.itguy.ir/cert.pem')
+	};
+}
+
 
 // Setup pipeline session support
 // app.use(session({
@@ -79,8 +93,26 @@ app.get('*', (req, res) => {
 });
 
 /**********************************************************************************************************/
+//check if we want the secure version or not
+if (process.env.CERT) {
+	var httpServer = http.createServer(app);
+	var httpsServer = https.createServer(sslOptions, app);
+	httpServer.listen(port);
+	httpsServer.listen(sslPort);
+	console.log('listening on ports',port,sslPort);
 
-// Run the server itself
-let server = app.listen(port, () => {
-    console.log('Example app listening on ' + server.address().port);
-});
+	app.all('*', function(req, res, next){
+	  if (req.secure) {
+	    return next();
+	  };
+	 res.redirect('https://'+req.hostname+':'+app.get(sslPort)+req.url);
+	});
+
+}else{
+	// Run the regular server, for dev
+	let server = app.listen(port, () => {
+	    console.log('Example app listening on ' + server.address().port);
+	});
+}
+
+

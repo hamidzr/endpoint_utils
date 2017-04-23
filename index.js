@@ -1,14 +1,16 @@
-/* Copyright G. Hemingway, @2017 */
 'use strict';
 
 let path            = require('path'),
     express         = require('express'),
+    app 			= express(),
     // session         = require('express-session'),
     logger          = require('morgan'),
     bodyParser      = require('body-parser'),
     mongoose        = require('mongoose'),
     http 			= require('http'),
     https 			= require('https'),
+    httpServer 		= http.Server(app),
+    io 				= require('socket.io')(httpServer),
     fs 				= require('fs'),
     redis			= require('redis');
 
@@ -19,7 +21,6 @@ let env = process.env.NODE_ENV ? process.env.NODE_ENV : 'dev';
 /**********************************************************************************************************/
 
 // Setup our Express pipeline
-let app = express();
 // Setup pipeline logging
 if (env !== 'test') app.use(logger('dev'));
 // Setup pipeline support for static pages
@@ -42,7 +43,6 @@ if (process.env.CERT){
 	};
 }
 
-
 // Setup pipeline session support
 // app.use(session({
 //     name: 'session',
@@ -55,6 +55,7 @@ if (process.env.CERT){
 //         secure: false
 //     }
 // }));
+
 // Finish pipeline setup
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -67,35 +68,41 @@ var allowCrossDomain = function(req, res, next) {
     next();
 }
 app.use(allowCrossDomain);
-// Connect to mongoBD
-// let options = { promiseLibrary: require('bluebird') };
-// mongoose.connect('mongodb://localhost:32768/heminggs', options, err => {
-//     if (err) console.log(err);
-//     else console.log('\t MongoDB connected');
-// });
 
-// Import our Data Models
-// app.models = {
-//     Game: require('./models/game'),
-//     User: require('./models/user')
-// };
 
+/**********************************************************************************************************/
 // Import our API Routes
 require('./api/kv/v1/key_value')(app);
 
 
-/**********************************************************************************************************/
+app.get('/', (req, res) => {
+    // res.render('base.pug', {});
+    res.render('base.pug',{});
+});
+
 
 // Give them the base page
-app.get('*', (req, res) => {
-    // res.render('base.pug', {});
-    res.status(404).send('resource not found');
+// app.get('*', (req, res) => {
+//     // res.render('base.pug', {});
+//     res.status(404).send('resource not found');
+// });
+
+io.on('connection', (socket) => {
+    console.log('user connected');
+    socket.on('disconnect', function() {
+        console.log('user disconnected');
+    });
+    socket.on('chat message', msg => {
+        console.log('msg: ', msg);
+        io.emit('chat message',msg);
+    });
+    // add listener for offers and acceptance of offers.
 });
+
 
 /**********************************************************************************************************/
 //check if we want the secure version or not
 if (process.env.CERT) {
-	var httpServer = http.createServer(app);
 	var httpsServer = https.createServer(sslOptions, app);
 	httpServer.listen(port);
 	httpsServer.listen(sslPort);
@@ -110,7 +117,7 @@ if (process.env.CERT) {
 
 }else{
 	// Run the regular server, for dev
-	let server = app.listen(port, () => {
+	let server = httpServer.listen(port, () => {
 	    console.log('Example app listening on ' + server.address().port);
 	});
 }

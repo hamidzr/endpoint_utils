@@ -1,9 +1,20 @@
 html(lang="en")
-    head
-        meta(charset="utf-8")
-        meta(http-equiv="X-UA-Compatible", content="IE=edge")
-        meta(name="viewport", content="width=device-width, initial-scale=1")
-        link(rel='stylesheet', href='/css/bootstrap.css')
-        title Key Store Store
-    body.container-fluid
-        div#mainDiv
+	head
+		meta(charset="utf-8")
+		meta(http-equiv="X-UA-Compatible", content="IE=edge")
+		meta(name="viewport", content="width=device-width, initial-scale=1")
+		link(rel='stylesheet', href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css", integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u", crossorigin="anonymous")
+		title EndPoint Utils
+	body.container-fluid
+		div#mainDiv
+			h3 Welcome to EndPoint Utils
+			ul
+				li Key Value Store
+				li Socket.io / Signalling WIP
+			footer.text-center.text-muted
+		script(src='https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.min.js')
+		script.
+			var socket = io();
+			socket.on('connect', function(){
+				console.log('Connected to socket');
+			});

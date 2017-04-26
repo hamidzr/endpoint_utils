@@ -9,9 +9,8 @@ let path            = require('path'),
 	mongoose        = require('mongoose'),
 	http 			= require('http'),
 	https 			= require('https'),
-	httpsServer,
+	httpsServer, io,
 	httpServer 		= http.Server(app),
-	io 				= require('socket.io')(httpServer),
 	fs 				= require('fs'),
 	redis			= require('redis');
 
@@ -44,6 +43,9 @@ if (process.env.CERT){
 	};
 	httpsServer = https.createServer(sslOptions, app);
 	io 				= require('socket.io')(httpsServer);
+
+}else{
+	io 				= require('socket.io')(httpServer);
 
 }
 

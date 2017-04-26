@@ -14,7 +14,22 @@ html(lang="en")
 			footer.text-center.text-muted
 		script(src='https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.min.js')
 		script.
-			var socket = io();
+			var socket = io('http://localhost:9080');
 			socket.on('connect', function(){
 				console.log('Connected to socket');
+			});
+			socket.emit('sig:ready','ROOMNAME2');
+			console.log('sent ready');
+			socket.on('sig:init',function(){
+				console.log('got init');
+				socket.emit('sig:offer','offerdata');
+				console.log('sent offer');
+			});
+			socket.on('sig:offer', function(offer){
+				console.log('got offer');
+				socket.emit('sig:accept','acceptdata');
+				console.log('sent accept');
+			});
+			socket.on('sig:accept', function(accept){
+				console.log('got accept');
 			});

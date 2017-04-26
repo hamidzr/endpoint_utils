@@ -162,9 +162,9 @@ io.on('connection', socket => {
 /**********************************************************************************************************/
 //check if we want the secure version or not
 if (process.env.CERT) {
-	httpServer.listen(port);
+	// httpServer.listen(port);
 	httpsServer.listen(sslPort);
-	console.log('listening on ports',port,sslPort);
+	console.log('listening on ports',sslPort);
 
 	app.all('*', function(req, res, next){
 		if (req.secure) {

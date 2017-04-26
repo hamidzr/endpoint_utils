@@ -9,6 +9,7 @@ let path            = require('path'),
 	mongoose        = require('mongoose'),
 	http 			= require('http'),
 	https 			= require('https'),
+	httpsServer,
 	httpServer 		= http.Server(app),
 	io 				= require('socket.io')(httpServer),
 	fs 				= require('fs'),
@@ -41,6 +42,9 @@ if (process.env.CERT){
 		key: fs.readFileSync('/etc/letsencrypt/live/gr.itguy.ir/privkey.pem'),
 		cert: fs.readFileSync('/etc/letsencrypt/live/gr.itguy.ir/cert.pem')
 	};
+	httpsServer = https.createServer(sslOptions, app);
+	io 				= require('socket.io')(httpsServer);
+
 }
 
 // Setup pipeline session support
@@ -156,7 +160,6 @@ io.on('connection', socket => {
 /**********************************************************************************************************/
 //check if we want the secure version or not
 if (process.env.CERT) {
-	var httpsServer = https.createServer(sslOptions, app);
 	httpServer.listen(port);
 	httpsServer.listen(sslPort);
 	console.log('listening on ports',port,sslPort);

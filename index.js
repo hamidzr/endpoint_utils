@@ -49,19 +49,6 @@ if (process.env.CERT){
 
 }
 
-// Setup pipeline session support
-// app.use(session({
-//     name: 'session',
-//     secret: 'ohhellyes',
-//     resave: false,
-//     saveUninitialized: true,
-//     cookie: {
-//         path: '/',
-//         httpOnly: false,
-//         secure: false
-//     }
-// }));
-
 // Finish pipeline setup
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -94,8 +81,10 @@ app.get('/', (req, res) => {
 // });
 
 // TODO move this out of here. make this a general websocket server using namespaces and rooms
+
 // ******************** signalling server section  ********
-// let roomStore = {};
+let roomStore = {};
+let isRoomInitialized = {}; // can be stored in redis
 //helper to get the main room name of a socket
 function getRoomName(socket){
 	// console.log(Object.keys(socket.rooms));
@@ -110,10 +99,10 @@ io.on('connection', socket => {
 	socket.on('sig:ready', (room) => {
 		// store socket-room relationship
 		// more memory usage less cpu time
-		// not needed any more since we are using rooms / namespaces
-		// roomStore[room] = roomStore[room] || [];
-		// roomStore[room].push(socket.id);
-		// roomStore[socket.id] = room;
+		// needed for handling disconncts and network partitioning
+		roomStore[room] = roomStore[room] || [];
+		roomStore[room].push(socket.id);
+		roomStore[socket.id] = room;
 
 		socket.join(room, () => {
 			console.log('user joined room: ',getRoomName(socket));
@@ -129,7 +118,11 @@ io.on('connection', socket => {
 					socket.emit('sig:offer',offer);
 				}else{
 					// OR: instruct to generate an offer
-					socket.emit('sig:init');			
+					console.log(isRoomInitialized[getRoomName(socket)]);
+					if (!isRoomInitialized[getRoomName(socket)]) {
+						socket.emit('sig:init');
+						isRoomInitialized[getRoomName(socket)] = true;
+					};
 				};
 			}); // end of redis get cb
 
@@ -143,18 +136,32 @@ io.on('connection', socket => {
 		console.log('offer ',offer);
 		//keep the offer around
 		app.redisC.set(getRoomName(socket),offer);
-		socket.broadcast.to(getRoomName(socket)).emit('sig:offer',offer)
+		socket.broadcast.to(getRoomName(socket)).emit('sig:offer',offer);
 
 	});
 
 	socket.on('sig:accept', (accept) => {
 		console.log('room ', getRoomName(socket));
 		console.log('accept ',accept);
-		socket.broadcast.to(getRoomName(socket)).emit('sig:accept',accept)
+		socket.broadcast.to(getRoomName(socket)).emit('sig:accept',accept);
+	});	
+
+	function resetRoom (socket,roomName) {
+		console.log('reseting room: ', roomName);
+		if (roomName) {
+			app.redisC.del([roomName]);
+			isRoomInitialized[roomName] = false;
+		};
+	}
+
+	socket.on('sig:reset', () => {
+		resetRoom(socket,roomStore[socket.id]);
 	});	
 
 	socket.on('disconnect', function() {
 		console.log('user disconnected',socket.id);
+		// call sig:reset
+		resetRoom(socket,roomStore[socket.id]);
 	});
 });
 

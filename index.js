@@ -88,7 +88,8 @@ let isRoomInitialized = {}; // can be stored in redis
 //helper to get the main room name of a socket
 function getRoomName(socket){
 	// console.log(Object.keys(socket.rooms));
-	return Object.keys(socket.rooms)[1]
+	// return Object.keys(socket.rooms)[1]
+	return roomStore[socket.id]
 }
 io.on('connection', socket => {
 	console.log('connected: ', socket.id);
@@ -160,7 +161,6 @@ io.on('connection', socket => {
 
 	socket.on('disconnect', function() {
 		console.log('user disconnected',socket.id);
-		// call sig:reset
 		resetRoom(socket,roomStore[socket.id]);
 	});
 });

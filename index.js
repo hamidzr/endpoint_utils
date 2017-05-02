@@ -74,13 +74,6 @@ app.get('/', (req, res) => {
 	res.render('base.pug',{});
 });
 
-
-// Give them the base page
-// app.get('*', (req, res) => {
-//     // res.render('base.pug', {});
-//     res.status(404).send('resource not found');
-// });
-
 // TODO move this out of here. make this a general websocket server using namespaces and rooms
 
 // ******************** signalling server section  ********
@@ -134,8 +127,7 @@ io.on('connection', socket => {
 
 	// when you get an offer send it to others in the room
 	socket.on('sig:offer', (offer) => {
-		console.log('room ', getRoomName(socket));
-		console.log('offer ',offer);
+		console.log('offer received for room: ', getRoomName(socket), 'from socket ', socket.id);
 		//keep the offer around
 		app.redisC.set(getRoomName(socket),offer);
 		socket.broadcast.to(getRoomName(socket)).emit('sig:offer',offer);
@@ -143,8 +135,7 @@ io.on('connection', socket => {
 	});
 
 	socket.on('sig:accept', (accept) => {
-		console.log('room ', getRoomName(socket));
-		console.log('accept ',accept);
+		console.log('accept received for room: ', getRoomName(socket), 'from socket ', socket.id);
 		socket.broadcast.to(getRoomName(socket)).emit('sig:accept',accept);
 	});	
 
@@ -173,13 +164,6 @@ if (process.env.CERT_DIR) {
 	// httpServer.listen(port);
 	httpsServer.listen(sslPort);
 	console.log('listening on ports',sslPort);
-
-	app.all('*', function(req, res, next){
-		if (req.secure) {
-		return next();
-		};
-		res.redirect('https://'+req.hostname+':'+app.get(sslPort)+req.url);
-	});
 
 }else{
 	// Run the regular server, for dev

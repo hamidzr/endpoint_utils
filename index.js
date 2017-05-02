@@ -36,10 +36,11 @@ app.redisC.on('connect', function() {
 
 
 //setup ssl creds
-if (process.env.CERT){
+if (process.env.CERT_DIR){
 	var sslOptions = {
-		key: fs.readFileSync('/etc/letsencrypt/live/gr.itguy.ir/privkey.pem'),
-		cert: fs.readFileSync('/etc/letsencrypt/live/gr.itguy.ir/cert.pem')
+		// '/etc/letsencrypt/live/gr.itguy.ir'
+		key: fs.readFileSync(process.env.CERT_DIR + '/privkey.pem'),
+		cert: fs.readFileSync(process.env.CERT_DIR + '/cert.pem')
 	};
 	httpsServer = https.createServer(sslOptions, app);
 	io 				= require('socket.io')(httpsServer);
@@ -168,7 +169,7 @@ io.on('connection', socket => {
 
 /**********************************************************************************************************/
 //check if we want the secure version or not
-if (process.env.CERT) {
+if (process.env.CERT_DIR) {
 	// httpServer.listen(port);
 	httpsServer.listen(sslPort);
 	console.log('listening on ports',sslPort);

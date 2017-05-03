@@ -3,7 +3,6 @@
 let path            = require('path'),
 	express         = require('express'),
 	app 			= express(),
-	// session         = require('express-session'),
 	logger          = require('morgan'),
 	bodyParser      = require('body-parser'),
 	mongoose        = require('mongoose'),
@@ -12,6 +11,7 @@ let path            = require('path'),
 	httpsServer, io,
 	httpServer 		= http.Server(app),
 	fs 				= require('fs'),
+	{ Etcd }		= require('node-etcd3'),
 	redis			= require('redis');
 
 let port = process.env.PORT ? process.env.PORT : 9080;
@@ -33,7 +33,8 @@ app.redisC = redis.createClient();
 app.redisC.on('connect', function() {
 	console.log('connected to redis client');
 });
-
+// setup etcd
+let etcd = new Etcd();
 
 //setup ssl creds
 if (process.env.CERT_DIR){
@@ -105,21 +106,23 @@ io.on('connection', socket => {
 			
 			// check if there is an offer and let client know
 			// either emit: here is the offer go call
-			app.redisC.get(getRoomName(socket), (err, reply) => {
+
+			etcd.get(getRoomName(socket)).then(value => {
 				// TODO handle error
-				console.log('reply was ', reply);
-				if (reply !== null) {
-					let offer = reply;
+				// value = value.node ? value.node.value : null;
+				if (value !== null) {
+					let offer = value;
 					socket.emit('sig:offer',offer);
 				}else{
 					// OR: instruct to generate an offer
 					console.log(isRoomInitialized[getRoomName(socket)]);
+					//lock the room
 					if (!isRoomInitialized[getRoomName(socket)]) {
 						socket.emit('sig:init');
 						isRoomInitialized[getRoomName(socket)] = true;
 					};
 				};
-			}); // end of redis get cb
+			}); // end of get cb
 
 		}); // end of socket join
 	}); // end of on sig:ready
@@ -129,7 +132,7 @@ io.on('connection', socket => {
 	socket.on('sig:offer', (offer) => {
 		console.log('offer received for room: ', getRoomName(socket), 'from socket ', socket.id);
 		//keep the offer around
-		app.redisC.set(getRoomName(socket),offer);
+		etcd.set(getRoomName(socket), offer);
 		socket.broadcast.to(getRoomName(socket)).emit('sig:offer',offer);
 
 	});
@@ -142,7 +145,7 @@ io.on('connection', socket => {
 	function resetRoom (socket,roomName) {
 		console.log('reseting room: ', roomName);
 		if (roomName) {
-			app.redisC.del([roomName]);
+			etcd.delete([roomName]);
 			isRoomInitialized[roomName] = false;
 		};
 	}

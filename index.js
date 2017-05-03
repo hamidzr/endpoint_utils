@@ -145,7 +145,7 @@ io.on('connection', socket => {
 	function resetRoom (socket,roomName) {
 		console.log('reseting room: ', roomName);
 		if (roomName) {
-			etcd.delete([roomName]);
+			etcd.delete(roomName);
 			isRoomInitialized[roomName] = false;
 		};
 	}
